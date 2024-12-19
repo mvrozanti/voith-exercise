@@ -1,3 +1,5 @@
+![CI](https://github.com/mvrozanti/voith-exercise/actions/workflows/ci.yml/badge.svg)
+
 # Time Series Data API with Flyway
 
 This project is a Dockerized API for accessing and managing cryptocurrency time series data. It includes a MySQL database, a Python FastAPI application, and Flyway for database migrations.

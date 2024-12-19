@@ -1,6 +1,7 @@
 #!/bin/bash
 
-file='../data/historical_data_last_4_days.csv'
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+file="$script_dir/../data/historical_data_last_4_days.csv"
 container_path='/var/lib/mysql-files'
 
 if [ ! -f "$file" ]; then
@@ -26,4 +27,3 @@ echo "Deleting $file from the MySQL container..."
 docker exec -i mysql rm "$container_path/$(basename "$file")" || { echo "Failed to delete $file from the container"; exit 1; }
 
 echo "Successfully imported $file"
-

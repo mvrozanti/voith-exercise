@@ -1,4 +1,4 @@
-![CI](https://github.com/mvrozanti/voith-exercise/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/mvrozanti/voith-exercise/actions/workflows/ci.yml/badge.svg?branch=master)
 
 # Time Series Data API with Flyway
 

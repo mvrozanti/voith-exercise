@@ -1,8 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock
 from voith_exercise.services.timeseries_service import TimeseriesService
-from fastapi import Depends, HTTPException, status
-from typing import Dict, List, Any
+
 
 @pytest.fixture
 def mock_repository():
@@ -14,19 +13,6 @@ def mock_repository():
 @pytest.fixture
 def service(mock_repository):
     """Fixture to provide the TimeseriesService with a mocked repository."""
-    return TimeseriesService(repository=mock_repository)
-
-import pytest
-from unittest.mock import AsyncMock
-from voith_exercise.services.timeseries_service import TimeseriesService
-
-@pytest.fixture
-def mock_repository():
-    repository = AsyncMock()
-    return repository
-
-@pytest.fixture
-def service(mock_repository):
     return TimeseriesService(repository=mock_repository)
 
 
@@ -56,6 +42,13 @@ async def test_get_filtered_data(service, mock_repository):
 
 
 @pytest.mark.asyncio
+async def test_get_filtered_data_invalid_coin_id(service, mock_repository):
+    """Test get_filtered_data with missing coin_id."""
+    with pytest.raises(ValueError, match="Coin ID must be provided."):
+        await service.get_filtered_data("", {})
+
+
+@pytest.mark.asyncio
 async def test_get_summary_stats(service, mock_repository):
     """Test get_summary_stats with valid date range."""
     mock_repository.fetch_summary_stats.return_value = {"avg_price": 50000.0, "total_volume": 10000.0}
@@ -69,6 +62,17 @@ async def test_get_summary_stats(service, mock_repository):
     assert result["avg_price"] == 50000.0
     assert result["total_volume"] == 10000.0
     mock_repository.fetch_summary_stats.assert_awaited_once_with(coin_id, start_date, end_date)
+
+
+@pytest.mark.asyncio
+async def test_get_summary_stats_invalid_params(service, mock_repository):
+    """Test get_summary_stats with invalid parameters."""
+    coin_id = "bitcoin"
+    start_date = None
+    end_date = None
+
+    with pytest.raises(ValueError, match="Coin ID, start_date, and end_date must be provided."):
+        await service.get_summary_stats(coin_id, start_date, end_date)
 
 
 @pytest.mark.asyncio
@@ -88,6 +92,17 @@ async def test_get_paginated_data(service, mock_repository):
     assert len(result) == 2
     assert result[0]["price"] == 50000.0
     mock_repository.fetch_paginated_data.assert_awaited_once_with(coin_id, limit, offset)
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_invalid_params(service, mock_repository):
+    """Test get_paginated_data with invalid parameters."""
+    coin_id = "bitcoin"
+    limit = 0
+    offset = -1
+
+    with pytest.raises(ValueError, match="Coin ID must be provided, limit > 0, and offset >= 0."):
+        await service.get_paginated_data(coin_id, limit, offset)
 
 
 @pytest.mark.asyncio

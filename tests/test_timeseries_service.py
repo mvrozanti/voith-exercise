@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock
 from voith_exercise.services.timeseries_service import TimeseriesService
-
+from fastapi import Depends, HTTPException, status
+from typing import Dict, List, Any
 
 @pytest.fixture
 def mock_repository():
@@ -13,6 +14,19 @@ def mock_repository():
 @pytest.fixture
 def service(mock_repository):
     """Fixture to provide the TimeseriesService with a mocked repository."""
+    return TimeseriesService(repository=mock_repository)
+
+import pytest
+from unittest.mock import AsyncMock
+from voith_exercise.services.timeseries_service import TimeseriesService
+
+@pytest.fixture
+def mock_repository():
+    repository = AsyncMock()
+    return repository
+
+@pytest.fixture
+def service(mock_repository):
     return TimeseriesService(repository=mock_repository)
 
 

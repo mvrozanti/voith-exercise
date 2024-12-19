@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: python_app
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+      MYSQL_DATABASE: timeseries_db
+      REDIS_HOST: redis
+
+  mysql:
+    image: mysql:9
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: timeseries_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+
+  redis:
+    image: redis:6.0
+    container_name: redis
+    command: redis-server --appendonly yes
+
+  flyway:
+    image: flyway/flyway:latest
+    container_name: flyway
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:mysql://mysql:3306/timeseries_db
+      FLYWAY_USER: user
+      FLYWAY_PASSWORD: userpass
+    volumes:
+      - ./migrations:/flyway/sql
+    command: -url=jdbc:mysql://mysql:3306/timeseries_db -user=user -password=userpass migrate

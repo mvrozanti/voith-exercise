@@ -13,6 +13,39 @@ This project is a Dockerized API for accessing and managing cryptocurrency time 
 
 ---
 
+## Project Structure
+
+```
+.
+├── API-Time-Series-Exercise.pdf
+├── data
+│   └── historical_data_last_4_days.csv
+├── docker-compose.yml
+├── Dockerfile
+├── LICENSE
+├── migrations
+│   └── V1__initial_schema.sql
+├── README.md
+├── requirements.txt
+├── scripts
+│   └── import-data.sh
+├── tests
+│   ├── __init__.py
+│   └── test_timeseries_service.py
+└── voith_exercise
+    ├── controllers
+    │   └── timeseries_controller.py
+    ├── db.py
+    ├── __init__.py
+    ├── main.py
+    ├── models
+    │   └── historical_data.py
+    ├── repositories
+    │   └── timeseries_repository.py
+    └── services
+        └── timeseries_service.py
+```
+
 ## Getting Started
 
 ### Clone the Repository
@@ -37,8 +70,154 @@ To quickly populate the database with data for demonstration purposes, I provide
 bash scripts/import-data.sh
 ```
 
-### Managing Migrations
-#### Creating a New Migration
+After running the script, you can verify the imported data:
+
+    docker exec -i mysql mysql -uroot -prootpass -e "SELECT * FROM historical_data LIMIT 5;" timeseries_db
+
+## Using the API
+### Basic Fetch Data for a Coin
+
+Fetch all available data for cardano:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/cardano"
+
+Response:
+
+```json
+{
+  "coin_id": "cardano",
+  "timestamps": ["2024-12-18T00:00:00", ...],
+  "prices": [1.11, ...],
+  "volumes": [99999, ...]
+}
+```
+
+### Fetch Data with Filters
+Fetch data for cardano within a specific date range:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/cardano?start_date=2024-12-18&end_date=2024-12-18"
+
+Response:
+
+```json
+{
+  "coin_id": "cardano",
+  "timestamps": ["2024-12-18T00:00:00", ...],
+  "prices": [1.11, ...],
+  "volumes": [99999, ...]
+}
+```
+
+
+Fetch data for zcash with price and volume filters:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/zcash?min_price=0&max_price=10000&min_volume=0&max_volume=49919727"
+
+Response:
+
+```json
+{
+  "coin_id": "zcash",
+  "timestamps": ["2024-12-18T00:00:00", ...],
+  "prices": [1.11, ...],
+  "volumes": [99999, ...]
+}
+```
+
+
+### Fetch Summary Statistics
+Get summary statistics for bitcoin within a specific date range:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/bitcoin/stats?start_date=2024-12-18&end_date=2024-12-19" 
+
+Response:
+```json
+{
+  "coin_id": "bitcoin",
+  "stats": {
+    "avg_price": 104203.55827765404,
+    "total_volume": 131901766571096.0
+  }
+}
+```
+
+
+### Fetch Paginated Data
+Fetch the first 10 records for ethereum:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/ethereum/paginated?limit=10&offset=0"
+
+Response:
+
+```json
+{
+  "coin_id": "ethereum",
+  "stats": {
+    "avg_price": 104203.55827765404,
+    "total_volume": 131901766571096.0
+  }
+}
+```
+
+Fetch the next 10 records for ethereum:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/ethereum/paginated?limit=10&offset=10"
+
+Response:
+
+```json
+{
+  "coin_id": "ethereum",
+  "timestamps": [
+    "2024-12-16T17:44:00",
+    ...
+  ],
+  "prices": [
+    3993.54,
+    ...
+  ],
+  "volumes": [
+    41066171468.0,
+    ...
+  ]
+}
+```
+
+### Error Cases
+Fetch data for a non-existent coin:
+
+    curl "http://localhost:8000/api/v1/data/timeseries/unknown_coin"
+
+Response:
+
+```json
+{"detail":"No data found for the given criteria"}
+```
+
+Fetch data with invalid filters (e.g., negative limit):
+
+    curl "http://localhost:8000/api/v1/data/timeseries/bitcoin/paginated?limit=-5&offset=0"
+
+Response:
+
+```json
+{ "detail": "Limit must be greater than 0." }
+```
+
+### Health Check
+
+Verify that the API is running:
+
+curl "http://localhost:8000/health"
+
+Response:
+
+```json
+{ "status": "ok" }
+```
+
+## Managing Migrations
+### Creating a New Migration
 
 Add a new migration file to the `migrations/` folder. Follow Flyway's naming convention:
 
@@ -51,7 +230,7 @@ Example:
 CREATE INDEX idx_price ON historical_data (price);
 ```
 
-#### Running Migrations Manually
+### Running Migrations Manually
 
 If Flyway has not applied migrations (e.g., after adding a new migration), start the Flyway service:
 
@@ -59,45 +238,12 @@ If Flyway has not applied migrations (e.g., after adding a new migration), start
 docker-compose up flyway
 ```
 
-### Using the API
-#### Health Check
+## To-do
 
-```
-curl http://localhost:8000/health
-```
-
-Expected response:
-
-```json
-{"status": "ok"}
-```
-
-#### Query Time Series Data
-
-Fetch time series data using a GET request:
-
-```
-curl "http://localhost:8000/timeseries?coin_id=api3&start=2024-12-18&end=2024-12-18"
-```
-
-Expected response:
-
-```json
-{
-  "source": "database",
-  "data": [
-    {"coin_id": "bitcoin", "timestamp": "2024-01-01T00:00:00", "price": 50000.0, "volume": 1000.0},
-    ...
-  ]
-}
-```
-
-
-#### Verifying the Import
-
-After running the script, you can verify the imported data:
-
-    docker exec -i mysql mysql -uroot -prootpass -e "SELECT * FROM historical_data LIMIT 5;" timeseries_db
+- Integrate Swagger via FastAPI, providing examples
+- Add linting tools (flake8 or pylint)
+- Create a Postman Collection and hook it up to the GitHub Actions workflow
+- Add logging and monitoring (e.g., Prometheus, Grafana)
 
 ## License
 

@@ -52,13 +52,26 @@ async def get_stats(
 @router.get("/timeseries/{coin_id}/paginated")
 async def get_paginated_data(
     coin_id: str,
-    limit: int = Query(10, description="Number of results to return"),
-    offset: int = Query(0, description="Number of results to skip"),
+    limit: int = Query(10, description="Number of results to return, must be > 0"),
+    offset: int = Query(0, description="Number of results to skip, must be >= 0"),
     service: TimeseriesService = Depends(TimeseriesService),
 ):
     """
     Get paginated time series data for a specific coin.
     """
+    # Validate the inputs
+    if limit <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Limit must be greater than 0."
+        )
+    if offset < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Offset must be non-negative."
+        )
+
+    # Fetch the paginated data
     data = await service.get_paginated_data(coin_id, limit, offset)
     if not data:
         raise HTTPException(status_code=404, detail="No data found")

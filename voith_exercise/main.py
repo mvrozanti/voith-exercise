@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from controllers.timeseries_controller import router as data_router
-from db import Base, engine
+from voith_exercise.controllers.timeseries_controller import router as data_router
+from voith_exercise.db import Base, engine
 
 app = FastAPI(
     title="Voith Exercise - Timeseries API",

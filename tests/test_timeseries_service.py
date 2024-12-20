@@ -126,3 +126,14 @@ async def test_get_paginated_data_invalid_params(service, mock_repository):
 
     with pytest.raises(ValueError, match="Coin ID must be provided, limit > 0, and offset >= 0."):
         await service.get_paginated_data(coin_id, limit, offset)
+
+
+@pytest.mark.asyncio
+async def test_get_all_coins(service, mock_repository):
+    """Test get_all_coins function."""
+    mock_repository.fetch_all_coins.return_value = ["bitcoin", "ethereum", "cardano"]
+
+    result = await service.get_all_coins()
+
+    assert result == ["bitcoin", "ethereum", "cardano"]
+    mock_repository.fetch_all_coins.assert_awaited_once()

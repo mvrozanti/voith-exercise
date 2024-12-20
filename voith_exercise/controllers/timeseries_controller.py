@@ -1,9 +1,17 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from voith_exercise.services.timeseries_service import TimeseriesService
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 router = APIRouter()
+
+@router.get("/timeseries/coins", response_model=List[str], summary="Get all distinct coins", tags=["Time Series"])
+async def get_all_coins(service: TimeseriesService = Depends(TimeseriesService)):
+    """
+    Returns a list of all distinct coin IDs available in the database.
+    """
+    return await service.get_all_coins()
+
 
 @router.get("/timeseries/{coin_id}")
 async def get_data(

@@ -13,16 +13,13 @@ class TimeseriesRepository:
     async def fetch_filtered_data(self, coin_id: str, filters: Dict) -> Dict[str, List]:
             conditions = [HistoricalData.coin_id == coin_id]
 
-            # Start date condition
             if filters.get("start_date"):
                 conditions.append(HistoricalData.timestamp >= filters["start_date"])
 
-            # Adjust the end_date to include the entire day
             if filters.get("end_date"):
                 end_of_day = filters["end_date"] + timedelta(days=1) - timedelta(seconds=1)
                 conditions.append(HistoricalData.timestamp <= end_of_day)
 
-            # Additional filters
             if filters.get("min_price"):
                 conditions.append(HistoricalData.price >= filters["min_price"])
             if filters.get("max_price"):
@@ -32,7 +29,6 @@ class TimeseriesRepository:
             if filters.get("max_volume"):
                 conditions.append(HistoricalData.volume <= filters["max_volume"])
 
-            # Query the database
             query = select(
                 HistoricalData.timestamp,
                 HistoricalData.price,
@@ -41,7 +37,6 @@ class TimeseriesRepository:
             result = self.db.execute(query)
             rows = result.fetchall()
 
-            # Transform results into the optimized format
             timestamps, prices, volumes = [], [], []
             for row in rows:
                 timestamps.append(row.timestamp)
@@ -83,3 +78,9 @@ class TimeseriesRepository:
         )
         result = self.db.execute(query)
         return result.scalars().all()
+
+    async def fetch_all_coins(self) -> List[str]:
+        """Fetch all distinct coin IDs from the historical_data table."""
+        query = select(HistoricalData.coin_id).distinct()
+        result = self.db.execute(query)
+        return [row.coin_id for row in result.fetchall()]

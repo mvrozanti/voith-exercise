@@ -75,6 +75,15 @@ After running the script, you can verify the imported data:
     docker exec -i mysql mysql -uroot -prootpass -e "SELECT * FROM historical_data LIMIT 5;" timeseries_db
 
 ## Using the API
+### Fetch all coins
+
+    curl "http://localhost:8000/api/v1/data/timeseries/coins"
+
+Response:
+```json
+{ "coins": ["bitcoin", "ethereum", "cardano", ...] }
+```
+
 ### Basic Fetch Data for a Coin
 
 Fetch all available data for cardano:
@@ -244,6 +253,8 @@ docker-compose up flyway
 - Add linting tools (flake8 or pylint)
 - Create a Postman Collection and hook it up to the GitHub Actions workflow
 - Add logging and monitoring (e.g., Prometheus, Grafana)
+- Have API port parameterizable
+- Add authentication mechanism
 
 ## License
 

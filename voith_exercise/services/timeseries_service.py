@@ -10,6 +10,11 @@ class TimeseriesService:
     def __init__(self, repository: TimeseriesRepository = Depends()):
         self.repository = repository
 
+    async def get_all_coins(self) -> List[str]:
+        """Retrieve a list of all distinct coin IDs from the database."""
+        logger.info("Fetching all distinct coin IDs")
+        return await self.repository.fetch_all_coins()
+
     async def get_filtered_data(self, coin_id: str, filters: Dict) -> Dict[str, List]:
         return await self.repository.fetch_filtered_data(coin_id, filters)
 
@@ -39,7 +44,6 @@ class TimeseriesService:
         logger.info(f"Fetching paginated data for coin_id={coin_id}, limit={limit}, offset={offset}")
         data = await self.repository.fetch_paginated_data(coin_id, limit, offset)
 
-        # Transform the result into the optimized format
         timestamps = [row.timestamp for row in data]
         prices = [row.price for row in data]
         volumes = [row.volume for row in data]

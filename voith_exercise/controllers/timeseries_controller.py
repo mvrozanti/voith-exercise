@@ -16,9 +16,6 @@ async def get_data(
     max_volume: Optional[float] = Query(None, description="Filter by maximum volume"),
     service: TimeseriesService = Depends(TimeseriesService),
 ):
-    """
-    Get time series data for a specific coin with optional filters.
-    """
     filters = {
         "start_date": start_date,
         "end_date": end_date,
@@ -28,10 +25,9 @@ async def get_data(
         "max_volume": max_volume,
     }
     data = await service.get_filtered_data(coin_id, filters)
-    if not data:
+    if not data["timestamps"]:
         raise HTTPException(status_code=404, detail="No data found for the given criteria")
-    return {"coin_id": coin_id, "data": data}
-
+    return {"coin_id": coin_id, **data}
 
 @router.get("/timeseries/{coin_id}/stats")
 async def get_stats(
@@ -44,9 +40,9 @@ async def get_stats(
     Get summary statistics (e.g., average price, total volume) for a coin within a date range.
     """
     stats = await service.get_summary_stats(coin_id, start_date, end_date)
-    if not stats:
+    if not stats["summary"]:
         raise HTTPException(status_code=404, detail="No data found for the given criteria")
-    return {"coin_id": coin_id, "stats": stats}
+    return {"coin_id": coin_id, "stats": stats["summary"]}
 
 
 @router.get("/timeseries/{coin_id}/paginated")
@@ -59,20 +55,14 @@ async def get_paginated_data(
     """
     Get paginated time series data for a specific coin.
     """
-    # Validate the inputs
     if limit <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Limit must be greater than 0."
-        )
+        raise HTTPException(status_code=400, detail="Limit must be greater than 0.")
     if offset < 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Offset must be non-negative."
-        )
+        raise HTTPException(status_code=400, detail="Offset must be non-negative.")
 
-    # Fetch the paginated data
     data = await service.get_paginated_data(coin_id, limit, offset)
-    if not data:
-        raise HTTPException(status_code=404, detail="No data found")
-    return {"coin_id": coin_id, "data": data}
+
+    if not data["timestamps"]:
+        raise HTTPException(status_code=404, detail="No data found for the given criteria")
+
+    return data

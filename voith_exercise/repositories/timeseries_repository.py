@@ -10,53 +10,70 @@ class TimeseriesRepository:
     def __init__(self):
         self.db: AsyncSession = SessionLocal()
 
-    async def fetch_filtered_data(self, coin_id: str, filters: Dict) -> List[HistoricalData]:
-        """Fetch time series data with filters."""
-        conditions = [HistoricalData.coin_id == coin_id]
+    async def fetch_filtered_data(self, coin_id: str, filters: Dict) -> Dict[str, List]:
+            conditions = [HistoricalData.coin_id == coin_id]
 
-        # Apply optional filters
-        if filters.get("start_date"):
-            conditions.append(HistoricalData.timestamp >= filters["start_date"])
-        if filters.get("end_date"):
-            # Adjust end_date to include the entire day
-            adjusted_end_date = filters["end_date"] + timedelta(days=1)
-            conditions.append(HistoricalData.timestamp < adjusted_end_date)
-        if filters.get("min_price"):
-            conditions.append(HistoricalData.price >= filters["min_price"])
-        if filters.get("max_price"):
-            conditions.append(HistoricalData.price <= filters["max_price"])
-        if filters.get("min_volume"):
-            conditions.append(HistoricalData.volume >= filters["min_volume"])
-        if filters.get("max_volume"):
-            conditions.append(HistoricalData.volume <= filters["max_volume"])
+            # Start date condition
+            if filters.get("start_date"):
+                conditions.append(HistoricalData.timestamp >= filters["start_date"])
 
-        # Build and execute query
-        query = select(HistoricalData).where(and_(*conditions))
-        result = self.db.execute(query)
-        return result.scalars().all()
+            # Adjust the end_date to include the entire day
+            if filters.get("end_date"):
+                end_of_day = filters["end_date"] + timedelta(days=1) - timedelta(seconds=1)
+                conditions.append(HistoricalData.timestamp <= end_of_day)
+
+            # Additional filters
+            if filters.get("min_price"):
+                conditions.append(HistoricalData.price >= filters["min_price"])
+            if filters.get("max_price"):
+                conditions.append(HistoricalData.price <= filters["max_price"])
+            if filters.get("min_volume"):
+                conditions.append(HistoricalData.volume >= filters["min_volume"])
+            if filters.get("max_volume"):
+                conditions.append(HistoricalData.volume <= filters["max_volume"])
+
+            # Query the database
+            query = select(
+                HistoricalData.timestamp,
+                HistoricalData.price,
+                HistoricalData.volume,
+            ).where(and_(*conditions))
+            result = self.db.execute(query)
+            rows = result.fetchall()
+
+            # Transform results into the optimized format
+            timestamps, prices, volumes = [], [], []
+            for row in rows:
+                timestamps.append(row.timestamp)
+                prices.append(row.price)
+                volumes.append(row.volume)
+
+            return {
+                "timestamps": timestamps,
+                "prices": prices,
+                "volumes": volumes,
+            }
 
     async def fetch_summary_stats(self, coin_id: str, start_date: Optional[str], end_date: Optional[str]) -> Dict[str, Optional[float]]:
-        """Fetch summary statistics for a specific coin."""
         query = (
             select(
                 func.avg(HistoricalData.price).label("avg_price"),
-                func.sum(HistoricalData.volume).label("total_volume"),
+                func.sum(HistoricalData.volume).label("total_volume")
             )
             .where(
                 HistoricalData.coin_id == coin_id,
                 HistoricalData.timestamp >= start_date,
-                HistoricalData.timestamp <= end_date,
+                HistoricalData.timestamp <= end_date
             )
         )
         result = self.db.execute(query)
         stats = result.fetchone()
         return {
             "avg_price": stats.avg_price if stats else None,
-            "total_volume": stats.total_volume if stats else None,
-        } if stats else {}
+            "total_volume": stats.total_volume if stats else None
+        }
 
     async def fetch_paginated_data(self, coin_id: str, limit: int, offset: int) -> List[HistoricalData]:
-        """Fetch paginated time series data."""
         query = (
             select(HistoricalData)
             .where(HistoricalData.coin_id == coin_id)

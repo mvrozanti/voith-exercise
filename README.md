@@ -59,10 +59,8 @@ If Flyway has not applied migrations (e.g., after adding a new migration), start
 docker-compose up flyway
 ```
 
-### Testing the API
+### Using the API
 #### Health Check
-
-Verify the API is running:
 
 ```
 curl http://localhost:8000/health
@@ -79,7 +77,7 @@ Expected response:
 Fetch time series data using a GET request:
 
 ```
-curl "http://localhost:8000/timeseries?coin_id=api3&start=2024-12-15&end=2024-12-18"
+curl "http://localhost:8000/timeseries?coin_id=api3&start=2024-12-18&end=2024-12-18"
 ```
 
 Expected response:
@@ -88,10 +86,12 @@ Expected response:
 {
   "source": "database",
   "data": [
-    {"coin_id": "bitcoin", "timestamp": "2024-01-01T00:00:00", "price": 50000.0, "volume": 1000.0}
+    {"coin_id": "bitcoin", "timestamp": "2024-01-01T00:00:00", "price": 50000.0, "volume": 1000.0},
+    ...
   ]
 }
 ```
+
 
 #### Verifying the Import
 
